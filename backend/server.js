@@ -21,7 +21,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Configure multer for file uploads
-const upload = multer({ 
+const upload = multer({
   dest: 'uploads/',
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
@@ -34,13 +34,19 @@ const upload = multer({
 });
 
 // Database connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/assignment-evaluation';
+// Database connection
+// TODO: Revert to process.env.MONGODB_URI for production security
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://likithsatya192_db_user:SAcd15V3X3FunonN@raji.dmtwfvn.mongodb.net/assignment-evaluation?retryWrites=true&w=majority';
+
+// Log masked URI for debugging
+console.log('Attempting to connect to MongoDB...');
 
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
+  .then(() => console.log('Connected to MongoDB successfully'))
   .catch(err => {
-    console.error('MongoDB connection error:', err);
-    console.log('Running without database - using in-memory storage');
+    console.error('CRITICAL MongoDB connection error:', err);
+    // Exit process on DB failure so Render restarts it rather than hanging in a broken state
+    process.exit(1);
   });
 
 // Health check endpoint
@@ -58,7 +64,7 @@ app.post('/api/assignments', async (req, res) => {
     const { title, description } = req.body;
 
     if (!title || !description) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Title and description are required',
         code: 'MISSING_FIELDS'
       });
@@ -79,7 +85,7 @@ app.post('/api/assignments', async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating assignment:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to create assignment',
       code: 'SERVER_ERROR'
     });
@@ -92,7 +98,7 @@ app.post('/api/assignments', async (req, res) => {
 app.get('/api/assignments', async (req, res) => {
   try {
     const assignments = await Assignment.find().sort({ created_at: -1 });
-    
+
     res.json({
       assignments: assignments.map(a => ({
         assignment_id: a._id,
@@ -103,7 +109,7 @@ app.get('/api/assignments', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching assignments:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch assignments',
       code: 'SERVER_ERROR'
     });
@@ -121,14 +127,14 @@ app.post('/api/submissions', async (req, res) => {
 
     // Validation
     if (!assignment_id || !student_name || !content) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Assignment ID, student name, and content are required',
         code: 'MISSING_FIELDS'
       });
     }
 
     if (content.trim().length === 0) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Content cannot be empty',
         code: 'INVALID_CONTENT'
       });
@@ -137,7 +143,7 @@ app.post('/api/submissions', async (req, res) => {
     // Check if assignment exists
     const assignment = await Assignment.findById(assignment_id);
     if (!assignment) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'Assignment not found',
         code: 'ASSIGNMENT_NOT_FOUND'
       });
@@ -163,7 +169,7 @@ app.post('/api/submissions', async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating submission:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to create submission',
       code: 'SERVER_ERROR'
     });
@@ -180,8 +186,8 @@ app.post('/api/submissions/upload', upload.single('file'), async (req, res) => {
 
     // Validation
     if (!assignment_id || !student_name || !file) {
-      if (file) await fs.unlink(file.path).catch(() => {});
-      return res.status(400).json({ 
+      if (file) await fs.unlink(file.path).catch(() => { });
+      return res.status(400).json({
         error: 'Assignment ID, student name, and file are required',
         code: 'MISSING_FIELDS'
       });
@@ -190,8 +196,8 @@ app.post('/api/submissions/upload', upload.single('file'), async (req, res) => {
     // Check if assignment exists
     const assignment = await Assignment.findById(assignment_id);
     if (!assignment) {
-      await fs.unlink(file.path).catch(() => {});
-      return res.status(404).json({ 
+      await fs.unlink(file.path).catch(() => { });
+      return res.status(404).json({
         error: 'Assignment not found',
         code: 'ASSIGNMENT_NOT_FOUND'
       });
@@ -205,16 +211,16 @@ app.post('/api/submissions/upload', upload.single('file'), async (req, res) => {
       content = pdfData.text;
 
       if (!content || content.trim().length === 0) {
-        await fs.unlink(file.path).catch(() => {});
-        return res.status(400).json({ 
+        await fs.unlink(file.path).catch(() => { });
+        return res.status(400).json({
           error: 'Could not extract text from PDF or PDF is empty',
           code: 'PDF_EXTRACTION_FAILED'
         });
       }
     } catch (pdfError) {
       console.error('PDF extraction error:', pdfError);
-      await fs.unlink(file.path).catch(() => {});
-      return res.status(400).json({ 
+      await fs.unlink(file.path).catch(() => { });
+      return res.status(400).json({
         error: 'Failed to extract text from PDF',
         code: 'PDF_EXTRACTION_FAILED'
       });
@@ -241,8 +247,8 @@ app.post('/api/submissions/upload', upload.single('file'), async (req, res) => {
     });
   } catch (error) {
     console.error('Error uploading submission:', error);
-    if (req.file) await fs.unlink(req.file.path).catch(() => {});
-    res.status(500).json({ 
+    if (req.file) await fs.unlink(req.file.path).catch(() => { });
+    res.status(500).json({
       error: 'Failed to upload submission',
       code: 'SERVER_ERROR'
     });
@@ -255,8 +261,8 @@ app.post('/api/submissions/upload', upload.single('file'), async (req, res) => {
  */
 app.get('/api/submissions/assignment/:assignmentId', async (req, res) => {
   try {
-    const submissions = await Submission.find({ 
-      assignment_id: req.params.assignmentId 
+    const submissions = await Submission.find({
+      assignment_id: req.params.assignmentId
     }).sort({ submitted_at: -1 });
 
     const submissionsWithFeedback = await Promise.all(
@@ -351,7 +357,7 @@ app.get('/api/feedback/:submissionId', async (req, res) => {
     const feedback = await Feedback.findOne({ submission_id: req.params.submissionId });
 
     if (!feedback) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'Feedback not found',
         code: 'FEEDBACK_NOT_FOUND'
       });
@@ -366,7 +372,7 @@ app.get('/api/feedback/:submissionId', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching feedback:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch feedback',
       code: 'SERVER_ERROR'
     });
@@ -413,7 +419,7 @@ async function processSubmission(submissionId, assignment) {
     console.log(`Submission ${submissionId} processed successfully`);
   } catch (error) {
     console.error(`Error processing submission ${submissionId}:`, error);
-    
+
     // Update submission status to failed
     try {
       await Submission.findByIdAndUpdate(submissionId, { status: 'failed' });
@@ -426,21 +432,21 @@ async function processSubmission(submissionId, assignment) {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
-  
+
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'File size exceeds 10MB limit',
         code: 'FILE_TOO_LARGE'
       });
     }
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: err.message,
       code: 'FILE_UPLOAD_ERROR'
     });
   }
 
-  res.status(500).json({ 
+  res.status(500).json({
     error: err.message || 'Internal server error',
     code: 'SERVER_ERROR'
   });
