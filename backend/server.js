@@ -54,6 +54,12 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
+// Root endpoint for easy verification
+app.get('/', (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? 'Connected to MongoDB' : 'Not Connected';
+  res.send(`Backend is Running! <br/> DB Status: <strong>${dbStatus}</strong>`);
+});
+
 // Assignment Endpoints
 
 /**
