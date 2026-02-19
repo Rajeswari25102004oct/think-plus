@@ -286,8 +286,56 @@ app.get('/api/submissions/assignment/:assignmentId', async (req, res) => {
     res.json({ submissions: submissionsWithFeedback });
   } catch (error) {
     console.error('Error fetching submissions:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch submissions',
+      code: 'SERVER_ERROR'
+    });
+  }
+});
+
+/**
+ * GET /api/submissions/:id - Get submission with feedback
+ */
+app.get('/api/submissions/:id', async (req, res) => {
+  try {
+    const submission = await Submission.findById(req.params.id)
+      .populate('assignment_id', 'title description');
+
+    if (!submission) {
+      return res.status(404).json({
+        error: 'Submission not found',
+        code: 'SUBMISSION_NOT_FOUND'
+      });
+    }
+
+    const response = {
+      submission_id: submission._id,
+      assignment_id: submission.assignment_id._id,
+      assignment_title: submission.assignment_id.title,
+      student_name: submission.student_name,
+      content: submission.content,
+      submitted_at: submission.submitted_at,
+      status: submission.status
+    };
+
+    // Include feedback if available
+    if (submission.status === 'evaluated') {
+      const feedback = await Feedback.findOne({ submission_id: submission._id });
+      if (feedback) {
+        response.feedback = {
+          plagiarism_risk: feedback.plagiarism_risk,
+          feedback_summary: feedback.feedback_summary,
+          score: feedback.score,
+          evaluated_at: feedback.evaluated_at
+        };
+      }
+    }
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching submission:', error);
+    res.status(500).json({
+      error: 'Failed to fetch submission',
       code: 'SERVER_ERROR'
     });
   }

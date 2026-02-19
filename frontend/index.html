@@ -5,6 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Assignment Evaluation Platform</title>
+    <script>
+      // Polyfill for Safari < 16.4 which lacks requestIdleCallback
+      if (!window.requestIdleCallback) {
+        window.requestIdleCallback = function (cb) {
+          return setTimeout(function () {
+            cb({ didTimeout: false, timeRemaining: function () { return 50; } });
+          }, 1);
+        };
+        window.cancelIdleCallback = function (id) { clearTimeout(id); };
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
