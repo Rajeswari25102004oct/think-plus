@@ -29,7 +29,7 @@ export default function StudentDashboard({ onBack }) {
   async function loadAssignments() {
     try {
       const res = await api.get('/assignments');
-      setAssignments(res.data.assignments);
+      setAssignments(res.data?.assignments || []);
     } catch {
       showToast('Failed to load assignments', 'error');
     }
@@ -173,7 +173,7 @@ export default function StudentDashboard({ onBack }) {
           onClick={() => setActiveTab('assignments')}
         >
           Assignments
-          <span className="tab-count">{assignments.length}</span>
+          <span className="tab-count">{assignments?.length || 0}</span>
         </button>
         <button
           className={`tab${activeTab === 'submissions' ? ' active' : ''}`}
@@ -187,7 +187,7 @@ export default function StudentDashboard({ onBack }) {
       {/* ── Assignments Tab ── */}
       {activeTab === 'assignments' && (
         <div className="cards-list">
-          {assignments.length === 0 ? (
+          {(assignments?.length || 0) === 0 ? (
             <div className="empty-state">
               <span>📭</span>
               <p>No assignments available yet.</p>

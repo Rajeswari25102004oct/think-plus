@@ -19,7 +19,7 @@ export default function InstructorDashboard({ onBack }) {
   async function loadAssignments() {
     try {
       const res = await api.get('/assignments');
-      setAssignments(res.data.assignments);
+      setAssignments(res.data?.assignments || []);
     } catch {
       showToast('Failed to load assignments', 'error');
     }
@@ -119,11 +119,11 @@ export default function InstructorDashboard({ onBack }) {
 
       <div className="section-header">
         <h2>All Assignments</h2>
-        <span className="section-count">{assignments.length} total</span>
+        <span className="section-count">{assignments?.length || 0} total</span>
       </div>
 
       <div className="cards-list">
-        {assignments.length === 0 ? (
+        {(assignments?.length || 0) === 0 ? (
           <div className="empty-state">
             <span>📋</span>
             <p>No assignments yet. Create your first one above.</p>
